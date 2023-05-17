@@ -8,5 +8,10 @@ Gait analysis based on optical motion capture, including the option for forcepla
 
 **Required scripts:**
 - *readmarkerdata.py*
-- *gaitcharacteristics.py*
 - *eventdetection.py*
+- *gaitcharacteristics.py*
+
+
+**Example data:**
+- *exampleGRAIL.c3d*
+- *exampleOvergorund.c3d*
