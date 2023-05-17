@@ -7,11 +7,11 @@ Gait analysis based on optical motion capture, including the option for forcepla
 
 
 **Required scripts:**
-- *readmarkerdata.py*
-- *eventdetection.py*
-- *gaitcharacteristics.py*
+- *readmarkerdata.py*: imports markerdata from  c3d file and if present also forceplate data
+- *eventdetection.py*: calculates gait events (initial contact, terminal contact)
+- *gaitcharacteristics.py*: calculates gait characteristics (gait speed, gait cycle duration, stance time, swing time, stride length, AP-propulsion)
 
 
 **Example data:**
-- *exampleGRAIL.c3d*
-- *exampleOvergorund.c3d*
+- *exampleGRAIL.c3d*: example data of walking on the GRIAL (treadmill including forceplates)
+- *exampleOvergorund.c3d*: example data of walking overground
