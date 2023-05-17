@@ -259,8 +259,8 @@ def gaitcharacteristicsGRAIL(markerdatavicon, gait_events, videoframerate, **kwa
     spatiotemporals = {}
     spatiotemporals['Gait speed left (m/s)'] = (velocity_left) #np.nanmean
     spatiotemporals['Gait speed right (m/s)'] = (velocity_right) #np.nanmean
-    spatiotemporals['Velocity left (m/s)'] = np.diff(markerdatavicon['LANK'][:,1])*videoframerate/1000
-    spatiotemporals['Velocity right (m/s)'] = np.diff(markerdatavicon['RANK'][:,1])*videoframerate/1000
+    # spatiotemporals['Velocity left (m/s)'] = np.diff(markerdatavicon['LANK'][:,1])*videoframerate/1000
+    # spatiotemporals['Velocity right (m/s)'] = np.diff(markerdatavicon['RANK'][:,1])*videoframerate/1000
     spatiotemporals['Gait speed left strides (m/s)'] = velocity_stridesleft
     spatiotemporals['Gait speed right strides (m/s)'] = velocity_stridesright
     spatiotemporals['Gait Cycle duration left (s)'] = GCDL
