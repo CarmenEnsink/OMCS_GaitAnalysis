@@ -628,16 +628,16 @@ def propulsion(gait_events, gaitcharacteristics, analogdata, bodyweight, **kwarg
     
     # Debug plot
     debug_plot = False
-    trial = ' '
+    title = ' '
     for key, value in kwargs.items():
         if key == 'debugplot':
             debug_plot = value
-        if key == 'trial':
-            trial = value
+        if key == 'plot_title':
+            title = value
             
     if debug_plot == True:
         fig, axs = plt.subplots(nrows=2, ncols=1, sharex=True)
-        axs[0].set_title(trial, fontsize=20)
+        axs[0].set_title(title, fontsize=20)
         # Left
         axs[0].plot(analogdata['Force Y left filt resamp'], 'blue', label='Force Y left')
         axs[0].plot(analogdata['Force Z left filt resamp'], 'orange', label='Force Z left')
