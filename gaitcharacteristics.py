@@ -58,8 +58,6 @@ def gaitcharacteristicsGRAIL(markerdatavicon, gait_events, videoframerate, **kwa
     
     
     # Time interval for foot flat phase
-    # valsleft = np.array(range(np.round(0.20*np.nanmean(StTL)).astype(int) , np.round(0.50*np.nanmean(StTL)).astype(int)))
-    # valsright = np.array(range(np.round(0.20*np.nanmean(StTR)).astype(int) , np.round(0.50*np.nanmean(StTR)).astype(int)))
     valsleft = np.array(range(np.round(0.30*np.nanmean(StTL)).astype(int) , np.round(0.50*np.nanmean(StTL)).astype(int)))
     valsright = np.array(range(np.round(0.30*np.nanmean(StTR)).astype(int) , np.round(0.50*np.nanmean(StTR)).astype(int)))
     
@@ -75,10 +73,6 @@ def gaitcharacteristicsGRAIL(markerdatavicon, gait_events, videoframerate, **kwa
     # Convert mm/s to m/s
     velocity_left = velocity_left/1000
     velocity_right = velocity_right/1000
-    
-    # Steplength
-    # Position difference between heel strike of one and the other foot + time difference*velocity of the treadmill
-    # treadmill 25-50% stancephase
     
     # Set second-order low-pass butterworth filter;
     fc1 = 5  # Cut-off frequency of the first low pass filter
@@ -133,13 +127,10 @@ def gaitcharacteristicsGRAIL(markerdatavicon, gait_events, videoframerate, **kwa
         duration_ff = stop_ff-start_ff
         treadmill_left[i] = (duration_stride/videoframerate) * np.nanmean(vrank[start_ff : stop_ff,1]) # assumed during left swing the right foot is at the treadmill
         
-        foot_left[i,:] = markerdatavicon['LHEE'][stop_stride] - markerdatavicon['LHEE'][start_stride]  # np.sqrt((markerdatavicon['LHEE'][stop_stride,0] - markerdatavicon['LHEE'][start_stride,0])**2+(markerdatavicon['LHEE'][stop_stride,1] - markerdatavicon['LHEE'][start_stride,1])**2)
-        stridelengths_left[i,0] = start_swing #TOL[TOL<HSL[i]][-1]
-        stridelengths_left[i,1] = stop_stride #HSL[i]
+        foot_left[i,:] = markerdatavicon['LHEE'][stop_stride] - markerdatavicon['LHEE'][start_stride]  
+        stridelengths_left[i,0] = start_swing 
+        stridelengths_left[i,1] = stop_stride 
         stridelengths_left[i,2] = treadmill_left[i] - foot_left[i,1]
-        # stridelengths_left[i,3] = treadmill_left[i]
-        # stridelengths_left[i,4] = start_stride
-        
     
     mslL = np.nanmedian(stridelengths_left[:,2])
     for i in range(0, len(stridelengths_left)):
@@ -162,25 +153,23 @@ def gaitcharacteristicsGRAIL(markerdatavicon, gait_events, videoframerate, **kwa
         duration_ff = stop_ff-start_ff
         treadmill_right[i] = (duration_stride/videoframerate) * np.nanmean(vlank[start_ff : stop_ff,1]) # assumed during left swing the right foot is at the treadmill
         
-        foot_right[i,:] = markerdatavicon['RHEE'][stop_stride] - markerdatavicon['RHEE'][start_stride] #RHEE
-        stridelengths_right[i,0] = start_swing #TOR[TOR<HSR[i]][-1]
-        stridelengths_right[i,1] = stop_stride #HSR[i]
-        stridelengths_right[i,2] = treadmill_right[i] - foot_right[i,1] #np.sqrt(foot_right[i,0]**2 + foot_right[i,1]**2))
-        # stridelengths_right[i,3] = treadmill_right[i]
-        # stridelengths_right[i,4] = start_stride
-        
+        foot_right[i,:] = markerdatavicon['RHEE'][stop_stride] - markerdatavicon['RHEE'][start_stride]
+        stridelengths_right[i,0] = start_swing
+        stridelengths_right[i,1] = stop_stride
+        stridelengths_right[i,2] = treadmill_right[i] - foot_right[i,1]
+
     mslR = np.nanmedian(stridelengths_right[:,2])
     for i in range(0, len(stridelengths_right)):
         if stridelengths_right[i,2] > 1.6*mslR or stridelengths_right[i,2] < 200 or stridelengths_right[i,1]-stridelengths_right[i,0] > 1.5*np.median(SwTR):
             stridelengths_right[i,:] = np.nan
     stridelengths_right = stridelengths_right[~np.isnan(stridelengths_right).any(axis=1), :]
     
+    
     # Gait cycle duration = time from heel strike till heel strike of the same foot
     # In case of walking outside measuremnent volume, two consecutive IC's are not actually consecutive> correct by assuming a gait cycle duration has to be smaller than 2 seconds.
     GCDL = np.zeros((len(stridelengths_left),3))*np.nan
     GCDL[:,0] = stridelengths_left[:,0]
     GCDL[:,1] = stridelengths_left[:,1]
-    # GCDL[:,2] = GCDL[:,1]-GCDL[:,0]
     GCDL[1:,2] = np.diff(stridelengths_left[:,1])
     GCDL[GCDL[:,2]>3*videoframerate,:] = np.nan
     GCDL[GCDL[:,2]<0.3*videoframerate,:] = np.nan
@@ -189,11 +178,11 @@ def gaitcharacteristicsGRAIL(markerdatavicon, gait_events, videoframerate, **kwa
     GCDR = np.zeros((len(stridelengths_right),3))*np.nan
     GCDR[:,0] = stridelengths_right[:,0]
     GCDR[:,1] = stridelengths_right[:,1]
-    # GCDR[:,2] = GCDR[:,1]-GCDR[:,0]
     GCDR[1:,2] = np.diff(stridelengths_right[:,1])
     GCDR[GCDR[:,2]>3*videoframerate,:] = np.nan
     GCDR[GCDR[:,2]<0.3*videoframerate,:] = np.nan    
     GCDR[GCDR[:,2]>1.5*np.nanmedian(GCDR[:,2]),:] = np.nan
+    
     
     # Velocity per stride
     velocity_stridesleft = np.zeros((len(stridelengths_left),3))*np.nan
@@ -204,63 +193,36 @@ def gaitcharacteristicsGRAIL(markerdatavicon, gait_events, videoframerate, **kwa
     velocity_stridesright[:,0] = stridelengths_right[:,0]
     velocity_stridesright[:,1] = stridelengths_right[:,1]
     velocity_stridesright[:,2] = (stridelengths_right[:,2]/1000) / ((GCDR[:,2])/videoframerate)
-    # velocity_stridesleft = (stridelengths_left[:,2]/1000) / (GCDL[:,2]/videoframerate)
-    # velocity_stridesright = (stridelengths_right[:,2]/1000) / (GCDR[:,2]/videoframerate)
     
-    # # Step lengths and stepwidths
-    # # Position difference between heel strikes of one foot and heel strike of other foot + time difference*velocity of the treadmill
-    # steplengths_left = np.zeros((len(HSL),2))*np.nan
-    # stepwidths_left = np.zeros((len(HSL),2))*np.nan
-    # # steptime_left = np.zeros(len(HSL))*np.nan
-    # # treadmill_left = np.zeros(len(HSL))*np.nan
-    # foot_left = np.zeros((len(HSL),3))*np.nan
-    # for i in range(0, len(HSL)):
-    #     # treadmill_left[i] = (HSL[i] - TOL[i])/videoframerate * np.nanmean(vrank[TOL[i] : HSL[i],1]) # assumed during left swing the right foot is at the treadmill
-    #     foot_left[i,:] = markerdatavicon['LHEE'][HSL[i]] - markerdatavicon['RHEE'][HSL[i]] # forward swing is in opposite direction of treadmill
-    #     steplengths_left[i,0] = HSL[i]
-    #     stepwidths_left[i,0] = HSL[i]
-    #     steplengths_left[i,1] = np.abs(foot_left[i,1])
-    #     stepwidths_left[i,1] = np.abs(foot_left[i,0])
-    #     # if i == 0 and HSL[0]<HSR[0]:
-    #     #     steptime_left[i] = HSL[i]-TOL[i]
-    #     # elif i == 0 and HSL[0]>HSR[0]:
-    #     #     steptime_left[i] = HSL[i]-HSR[HSR<HSL[i]][-1]
-    #     # if i > 0:
-    #     #     if (HSL[i] - HSR[HSR<HSL[i]][-1]) < 1.5*videoframerate:
-    #     #         steptime_left[i] = HSL[i]-HSR[HSR<HSL[i]][-1]
-    #     #     else:
-    #     #         steptime_left[i] = np.nan
     
-    # steplengths_right = np.zeros((len(HSR),2))*np.nan
-    # stepwidths_right = np.zeros((len(HSR),2))*np.nan
-    # # steptime_right = np.zeros(len(TOR))*np.nan
-    # # treadmill_right = np.zeros(len(TOR))*np.nan
-    # foot_right = np.zeros((len(HSR),3))*np.nan
-    # for i in range(0, len(HSR)):
-    # #     # treadmill_right[i] = (HSR[i] - TOR[i])/videoframerate * np.nanmean(vlank[TOR[i] : HSR[i],1]) # assumed during left swing the right foot is at the treadmill
-    #     foot_right[i,:] = markerdatavicon['RHEE'][HSR[i]] - markerdatavicon['LHEE'][HSR[i]] # forward swing is in opposite direction of treadmill
-    #     steplengths_right[i,0] = HSR[i]
-    #     stepwidths_right[i,0] = HSR[i]
-    #     steplengths_right[i,1] = np.abs(foot_right[i,1])
-    #     stepwidths_right[i,1] = np.abs(foot_right[i,0])
-    # #     if i == 0 and HSR[0]<HSL[0]:
-    # #         steptime_right[i] = HSR[i]-TOR[i]
-    # #     elif i == 0 and HSR[0]>HSL[0]:
-    # #         steptime_right[i] = HSR[i]-HSL[HSL<HSR[i]][-1]
-    # #     if i > 0:
-    # #         if (HSR[i] - HSL[HSL<HSR[i]][-1]) < 1.5*videoframerate:
-    # #             steptime_right[i] = HSR[i]-HSL[HSL<HSR[i]][-1]
-    # #         else:
-    # #             steptime_right[i] = np.nan
+    # Step lengths and stepwidths
+    # Position difference between feet at heel strike
+    steplengths_left = np.zeros((len(HSL),2))*np.nan
+    stepwidths_left = np.zeros((len(HSL),2))*np.nan
+    foot_left = np.zeros((len(HSL),3))*np.nan
+    for i in range(0, len(HSL)):
+        foot_left[i,:] = markerdatavicon['LHEE'][HSL[i]] - markerdatavicon['RHEE'][HSL[i]] # forward swing is in opposite direction of treadmill
+        steplengths_left[i,0] = HSL[i]
+        stepwidths_left[i,0] = HSL[i]
+        steplengths_left[i,1] = np.abs(foot_left[i,1])
+        stepwidths_left[i,1] = np.abs(foot_left[i,0])
+    
+    steplengths_right = np.zeros((len(HSR),2))*np.nan
+    stepwidths_right = np.zeros((len(HSR),2))*np.nan
+    foot_right = np.zeros((len(HSR),3))*np.nan
+    for i in range(0, len(HSR)):
+        foot_right[i,:] = markerdatavicon['RHEE'][HSR[i]] - markerdatavicon['LHEE'][HSR[i]] # forward swing is in opposite direction of treadmill
+        steplengths_right[i,0] = HSR[i]
+        stepwidths_right[i,0] = HSR[i]
+        steplengths_right[i,1] = np.abs(foot_right[i,1])
+        stepwidths_right[i,1] = np.abs(foot_right[i,0])
     
 
   
     # Create output dict
     spatiotemporals = {}
-    spatiotemporals['Gait speed left (m/s)'] = (velocity_left) #np.nanmean
-    spatiotemporals['Gait speed right (m/s)'] = (velocity_right) #np.nanmean
-    # spatiotemporals['Velocity left (m/s)'] = np.diff(markerdatavicon['LANK'][:,1])*videoframerate/1000
-    # spatiotemporals['Velocity right (m/s)'] = np.diff(markerdatavicon['RANK'][:,1])*videoframerate/1000
+    spatiotemporals['Gait speed left (m/s)'] = (velocity_left)
+    spatiotemporals['Gait speed right (m/s)'] = (velocity_right)
     spatiotemporals['Gait speed left strides (m/s)'] = velocity_stridesleft
     spatiotemporals['Gait speed right strides (m/s)'] = velocity_stridesright
     spatiotemporals['Gait Cycle duration left (s)'] = GCDL
@@ -271,12 +233,10 @@ def gaitcharacteristicsGRAIL(markerdatavicon, gait_events, videoframerate, **kwa
     spatiotemporals['Stance time right (s)'] = StTR/videoframerate
     spatiotemporals['Swing time left (s)'] = SwTL/videoframerate
     spatiotemporals['Swing time right (s)'] = SwTR/videoframerate
-    # spatiotemporals['Steplength left (mm)'] = steplengths_left
-    # spatiotemporals['Steplength right (mm)'] = steplengths_right
-    # spatiotemporals['Stepwidth left (mm)'] = stepwidths_left
-    # spatiotemporals['Stepwidth right(mm)'] = stepwidths_right
-    # spatiotemporals['Step time left (s)'] = steptime_left/videoframerate
-    # spatiotemporals['Step time right (s)'] = steptime_right/videoframerate
+    spatiotemporals['Steplength left (mm)'] = steplengths_left
+    spatiotemporals['Steplength right (mm)'] = steplengths_right
+    spatiotemporals['Stepwidth left (mm)'] = stepwidths_left
+    spatiotemporals['Stepwidth right(mm)'] = stepwidths_right
     spatiotemporals['Stridelength left (mm)'] = stridelengths_left
     spatiotemporals['Stridelength right (mm)'] = stridelengths_right
     
@@ -289,8 +249,6 @@ def gaitcharacteristicsOverground(markerdatavicon, gait_events, videoframerate):
     TOL = gait_events['Index numbers toe off left']
     HSR = gait_events['Index numbers heel strike right']
     TOR = gait_events['Index numbers toe off right']
-    
-   
     
     # Stride lengths
     # Position difference between two heel strikes of one foot + time difference*velocity of the treadmill
@@ -382,7 +340,6 @@ def gaitcharacteristicsOverground(markerdatavicon, gait_events, videoframerate):
     GCDL[:,0] = stridelengths_left[:,3]
     GCDL[:,1] = stridelengths_left[:,1]
     GCDL[:,2] = stridelengths_left[:,1]-stridelengths_left[:,3]
-    # GCDL[1:,2] = np.diff(stridelengths_left[:,1])
     GCDL[GCDL[:,2]>2.3*videoframerate,:] = np.nan
     GCDL[GCDL[:,2]<0.3*videoframerate,:] = np.nan
     GCDL[GCDL[:,2]>1.5*np.nanmedian(GCDL[:,2]),:] = np.nan
@@ -392,7 +349,6 @@ def gaitcharacteristicsOverground(markerdatavicon, gait_events, videoframerate):
     GCDR[:,0] = stridelengths_right[:,3]
     GCDR[:,1] = stridelengths_right[:,1]
     GCDR[:,2] = stridelengths_right[:,1]-stridelengths_right[:,3]
-    # GCDR[1:,2] = np.diff(stridelengths_right[:,1])
     GCDR[GCDR[:,2]>2.3*videoframerate,:] = np.nan
     GCDR[GCDR[:,2]<0.3*videoframerate,:] = np.nan
     GCDR[GCDR[:,2]>1.5*np.nanmedian(GCDR[:,2]),:] = np.nan
@@ -459,43 +415,43 @@ def gaitcharacteristicsOverground(markerdatavicon, gait_events, videoframerate):
     velocity_right = velocity_right/1000 * videoframerate
     
     
-    # # Step lengths and stepwidths
-    # # Position difference between heel strikes of one foot and heel strike of other foot
-    # steplengths_left = np.zeros(len(HSL))*np.nan
-    # stepwidths_left = np.zeros(len(HSL))*np.nan
-    # steptime_left = np.zeros(len(HSL))*np.nan
-    # foot_left = np.zeros((len(HSL),3))*np.nan
-    # for i in range(0, len(HSL)):
-    #     foot_left[i,:] = np.abs(markerdatavicon['LHEE'][HSL[i]] - markerdatavicon['RHEE'][HSL[i]]) # forward swing is in opposite direction of treadmill
-    #     steplengths_left[i] = foot_left[i,1]
-    #     stepwidths_left[i] = np.abs(foot_left[i,0])
-    #     if i == 0 and HSL[0]<HSR[0]:
-    #         steptime_left[i] = HSL[i]-TOL[i]
-    #     elif i == 0 and HSL[0]>HSR[0]:
-    #         steptime_left[i] = HSL[i]-HSR[HSR<HSL[i]][-1]
-    #     if i > 0:
-    #         if (HSL[i] - HSR[HSR<HSL[i]][-1]) < 2.3*videoframerate:
-    #             steptime_left[i] = HSL[i]-HSR[HSR<HSL[i]][-1]
-    #         else:
-    #             steptime_left[i] = np.nan
+    # Step lengths and stepwidths
+    # Position difference between heel strikes of one foot and heel strike of other foot
+    steplengths_left = np.zeros(len(HSL))*np.nan
+    stepwidths_left = np.zeros(len(HSL))*np.nan
+    steptime_left = np.zeros(len(HSL))*np.nan
+    foot_left = np.zeros((len(HSL),3))*np.nan
+    for i in range(0, len(HSL)):
+        foot_left[i,:] = np.abs(markerdatavicon['LHEE'][HSL[i]] - markerdatavicon['RHEE'][HSL[i]]) # forward swing is in opposite direction of treadmill
+        steplengths_left[i] = foot_left[i,1]
+        stepwidths_left[i] = np.abs(foot_left[i,0])
+        if i == 0 and HSL[0]<HSR[0]:
+            steptime_left[i] = HSL[i]-TOL[i]
+        elif i == 0 and HSL[0]>HSR[0]:
+            steptime_left[i] = HSL[i]-HSR[HSR<HSL[i]][-1]
+        if i > 0:
+            if (HSL[i] - HSR[HSR<HSL[i]][-1]) < 2.3*videoframerate:
+                steptime_left[i] = HSL[i]-HSR[HSR<HSL[i]][-1]
+            else:
+                steptime_left[i] = np.nan
     
-    # steplengths_right = np.zeros(len(HSR))*np.nan
-    # stepwidths_right = np.zeros(len(HSR))*np.nan
-    # steptime_right = np.zeros(len(HSR))*np.nan
-    # foot_right = np.zeros((len(HSR),3))*np.nan
-    # for i in range(0, len(HSR)):
-    #     foot_right[i,:] = (-1) * (markerdatavicon['RHEE'][HSR[i]] - markerdatavicon['LHEE'][HSR[i]]) # forward swing is in opposite direction of treadmill
-    #     steplengths_right[i] = foot_right[i,1]
-    #     stepwidths_right[i] = np.abs(foot_right[i,0])
-    #     if i == 0 and HSR[0]<HSL[0]:
-    #         steptime_right[i] = HSR[i]-TOR[i]
-    #     elif i == 0 and HSR[0]>HSL[0]:
-    #         steptime_right[i] = HSR[i]-HSL[HSL<HSR[i]][-1]
-    #     if i > 0:
-    #         if (HSR[i] - HSL[HSL<HSR[i]][-1]) < 2.3*videoframerate:
-    #             steptime_right[i] = HSR[i]-HSL[HSL<HSR[i]][-1]
-    #         else:
-    #             steptime_right[i] = np.nan
+    steplengths_right = np.zeros(len(HSR))*np.nan
+    stepwidths_right = np.zeros(len(HSR))*np.nan
+    steptime_right = np.zeros(len(HSR))*np.nan
+    foot_right = np.zeros((len(HSR),3))*np.nan
+    for i in range(0, len(HSR)):
+        foot_right[i,:] = (-1) * (markerdatavicon['RHEE'][HSR[i]] - markerdatavicon['LHEE'][HSR[i]]) # forward swing is in opposite direction of treadmill
+        steplengths_right[i] = foot_right[i,1]
+        stepwidths_right[i] = np.abs(foot_right[i,0])
+        if i == 0 and HSR[0]<HSL[0]:
+            steptime_right[i] = HSR[i]-TOR[i]
+        elif i == 0 and HSR[0]>HSL[0]:
+            steptime_right[i] = HSR[i]-HSL[HSL<HSR[i]][-1]
+        if i > 0:
+            if (HSR[i] - HSL[HSL<HSR[i]][-1]) < 2.3*videoframerate:
+                steptime_right[i] = HSR[i]-HSL[HSL<HSR[i]][-1]
+            else:
+                steptime_right[i] = np.nan
 
     
     # Create output dict
@@ -512,12 +468,12 @@ def gaitcharacteristicsOverground(markerdatavicon, gait_events, videoframerate):
     spatiotemporals['Stance time right (s)'] = StTR/videoframerate
     spatiotemporals['Swing time left (s)'] = SwTL/videoframerate
     spatiotemporals['Swing time right (s)'] = SwTR/videoframerate
-    # spatiotemporals['Steplength left (mm)'] = steplengths_left
-    # spatiotemporals['Steplength right (mm)'] = steplengths_right
-    # spatiotemporals['Stepwidth left (mm)'] = stepwidths_left
-    # spatiotemporals['Stepwidth right(mm)'] = stepwidths_right
-    # spatiotemporals['Step time left (s)'] = steptime_left/videoframerate
-    # spatiotemporals['Step time right (s)'] = steptime_right/videoframerate
+    spatiotemporals['Steplength left (mm)'] = steplengths_left
+    spatiotemporals['Steplength right (mm)'] = steplengths_right
+    spatiotemporals['Stepwidth left (mm)'] = stepwidths_left
+    spatiotemporals['Stepwidth right(mm)'] = stepwidths_right
+    spatiotemporals['Step time left (s)'] = steptime_left/videoframerate
+    spatiotemporals['Step time right (s)'] = steptime_right/videoframerate
     spatiotemporals['Stridelength left (mm)'] = stridelengths_left[:,0:3]
     spatiotemporals['Stridelength right (mm)'] = stridelengths_right[:,0:3]
     
@@ -527,6 +483,8 @@ def gaitcharacteristicsOverground(markerdatavicon, gait_events, videoframerate):
 
 
 def propulsion(gait_events, gaitcharacteristics, analogdata, bodyweight, **kwargs):
+    
+    # Based on: Deffeyes, J. E., & Peters, D. M. (2021). Time-integrated propulsive and braking impulses do not depend on walking speed. Gait & posture, 88, 258-263. DOI: https://doi.org/10.1016/j.gaitpost.2021.06.012
     
     # Filter and resample force plate data
     # Set second-order low-pass butterworth filter;
@@ -548,7 +506,6 @@ def propulsion(gait_events, gaitcharacteristics, analogdata, bodyweight, **kwarg
     analogdata['Force Y right filt resamp'] = signal.resample(analogdata['Force Y right filt'], int(len(analogdata['Force Y right filt'])/10))
     analogdata['Force Z left filt resamp'] = signal.resample(analogdata['Force Z left filt'], int(len(analogdata['Force Z left filt'])/10))
     analogdata['Force Z right filt resamp'] = signal.resample(analogdata['Force Z right filt'], int(len(analogdata['Force Z right filt'])/10))
-
 
 
     # First determine stance phase from IC till TC according to vicon data,
@@ -589,9 +546,8 @@ def propulsion(gait_events, gaitcharacteristics, analogdata, bodyweight, **kwarg
                     
         except IndexError:
             pass
-    # vicon_spatiotemporals[trial]['Stance left index numbers'] = vicon_spatiotemporals[trial]['Stance left index numbers'].astype(int)
     
-    # right
+    # Right
     gaitcharacteristics['Stance right index numbers'] = np.array([], dtype=int)
     gait_events['Propulsion right start'] = np.array([], dtype=int)
     gait_events['Propulsion right stop'] = np.array([], dtype=int)
@@ -621,10 +577,17 @@ def propulsion(gait_events, gaitcharacteristics, analogdata, bodyweight, **kwarg
                     
         except IndexError:
             pass
-    # vicon_spatiotemporals[trial]['Stance right index numbers'] = vicon_spatiotemporals[trial]['Stance right index numbers'].astype(int)
     
     
-    
+    # Remove propulsion start/stop events in first 10 seconds of trial
+    fs = 100
+    for key, value in kwargs.items():
+        if key == 'sample_frequency':
+            fs = value
+    gait_events['Propulsion left start'] = gait_events['Propulsion left start'][gait_events['Propulsion left start'] > 10*fs]
+    gait_events['Propulsion left stop'] = gait_events['Propulsion left stop'][gait_events['Propulsion left stop'] > gait_events['Propulsion left start'][0]]
+    gait_events['Propulsion right start'] = gait_events['Propulsion right start'][gait_events['Propulsion right start'] > 10*fs]
+    gait_events['Propulsion right stop'] = gait_events['Propulsion right stop'][gait_events['Propulsion right stop'] > gait_events['Propulsion right start'][0]]
     
     # Debug plot
     debug_plot = False
@@ -639,43 +602,48 @@ def propulsion(gait_events, gaitcharacteristics, analogdata, bodyweight, **kwarg
         fig, axs = plt.subplots(nrows=2, ncols=1, sharex=True)
         axs[0].set_title(title, fontsize=20)
         # Left
-        axs[0].plot(analogdata['Force Y left filt resamp'], 'blue', label='Force Y left')
-        axs[0].plot(analogdata['Force Z left filt resamp'], 'orange', label='Force Z left')
-        axs[0].plot(gait_events['Index numbers heel strike left'], analogdata['Force Y left filt resamp'][gait_events['Index numbers heel strike left']], 'r.')
-        axs[0].plot(gait_events['Index numbers toe off left'], analogdata['Force Y left filt resamp'][gait_events['Index numbers toe off left']], 'g.')
-        axs[0].plot(gait_events['Propulsion left start'], analogdata['Force Y left filt resamp'][gait_events['Propulsion left start']], 'g^', label='Propulsion start')
-        axs[0].plot(gait_events['Propulsion left stop'], analogdata['Force Y left filt resamp'][gait_events['Propulsion left stop']], 'r^', label='Propulsion stop')
+        axs[0].plot(analogdata['Force Y left filt resamp']/bodyweight, 'blue', label='Force Y left')
+        axs[0].plot(analogdata['Force Z left filt resamp']/bodyweight, 'orange', label='Force Z left')
+        axs[0].plot(gait_events['Index numbers heel strike left'], analogdata['Force Y left filt resamp'][gait_events['Index numbers heel strike left']]/bodyweight, 'r.')
+        axs[0].plot(gait_events['Index numbers toe off left'], analogdata['Force Y left filt resamp'][gait_events['Index numbers toe off left']]/bodyweight, 'g.')
+        axs[0].plot(gait_events['Propulsion left start'], analogdata['Force Y left filt resamp'][gait_events['Propulsion left start']]/bodyweight, 'g^', label='Propulsion start')
+        axs[0].plot(gait_events['Propulsion left stop'], analogdata['Force Y left filt resamp'][gait_events['Propulsion left stop']]/bodyweight, 'r^', label='Propulsion stop')
         
         for i in range(0, len(gait_events['Propulsion left start'])):
-            axs[0].fill_between(x=np.arange(gait_events['Propulsion left start'][i], gait_events['Propulsion left stop'][i]), y1=analogdata['Force Y left filt resamp'][gait_events['Propulsion left start'][i] : gait_events['Propulsion left stop'][i]], y2=0, color='cyan')
+            axs[0].fill_between(x=np.arange(gait_events['Propulsion left start'][i], gait_events['Propulsion left stop'][i]), y1=analogdata['Force Y left filt resamp'][gait_events['Propulsion left start'][i] : gait_events['Propulsion left stop'][i]]/bodyweight, y2=0, color='cyan')
         #Right
-        axs[1].plot(analogdata['Force Y right filt resamp'], 'blue', label='Force Y')
-        axs[1].plot(analogdata['Force Z right filt resamp'], 'orange', label='Force Z')
-        axs[1].plot(gait_events['Index numbers heel strike right'], analogdata['Force Y right filt resamp'][gait_events['Index numbers heel strike right']], 'r.', label = 'HS')
-        axs[1].plot(gait_events['Index numbers toe off right'], analogdata['Force Y right filt resamp'][gait_events['Index numbers toe off right']], 'g.', label = 'TO')
-        axs[1].plot(gait_events['Propulsion right start'], analogdata['Force Y right filt resamp'][gait_events['Propulsion right start']], 'gv', label='Propulsion start')
-        axs[1].plot(gait_events['Propulsion right stop'], analogdata['Force Y right filt resamp'][gait_events['Propulsion right stop']], 'rv', label='Propulsion stop')
+        axs[1].plot(analogdata['Force Y right filt resamp']/bodyweight, 'blue', label='Force Y')
+        axs[1].plot(analogdata['Force Z right filt resamp']/bodyweight, 'orange', label='Force Z')
+        axs[1].plot(gait_events['Index numbers heel strike right'], analogdata['Force Y right filt resamp'][gait_events['Index numbers heel strike right']]/bodyweight, 'r.', label = 'HS')
+        axs[1].plot(gait_events['Index numbers toe off right'], analogdata['Force Y right filt resamp'][gait_events['Index numbers toe off right']]/bodyweight, 'g.', label = 'TO')
+        axs[1].plot(gait_events['Propulsion right start'], analogdata['Force Y right filt resamp'][gait_events['Propulsion right start']]/bodyweight, 'gv', label='Propulsion start')
+        axs[1].plot(gait_events['Propulsion right stop'], analogdata['Force Y right filt resamp'][gait_events['Propulsion right stop']]/bodyweight, 'rv', label='Propulsion stop')
 
         for i in range(0, len(gait_events['Propulsion right start'])):
-            axs[1].fill_between(x=np.arange(gait_events['Propulsion right start'][i], gait_events['Propulsion right stop'][i]), y1=analogdata['Force Y right filt resamp'][gait_events['Propulsion right start'][i] : gait_events['Propulsion right stop'][i]], y2=0, color='cyan')
+            axs[1].fill_between(x=np.arange(gait_events['Propulsion right start'][i], gait_events['Propulsion right stop'][i]), y1=analogdata['Force Y right filt resamp'][gait_events['Propulsion right start'][i] : gait_events['Propulsion right stop'][i]]/bodyweight, y2=0, color='cyan')
         axs[1].legend()
 
 
     # Calculate area under the curve of force in anterior-posterior direction
-    
+    relative = 1
+    for key, value in kwargs.items():
+        if key == 'relative_to_bodyweight':
+            relative = value
+        
     # Propultion = area under the curve
     gaitcharacteristics['Propulsion left'] = np.zeros(shape=(len(gait_events['Propulsion left start']),3)) *np.nan
     for i in range(len(gait_events['Propulsion left start'])):
         gaitcharacteristics['Propulsion left'][i,0] = gait_events['Propulsion left start'][i]
         gaitcharacteristics['Propulsion left'][i,1] = gait_events['Propulsion left stop'][i]
         # Compute the area using the composite trapezoidal rule.
-        gaitcharacteristics['Propulsion left'][i,2] = np.abs(np.trapz(analogdata['Force Y left filt resamp'][gait_events['Propulsion left start'][i]:gait_events['Propulsion left stop'][i]]))
+        gaitcharacteristics['Propulsion left'][i,2] = (np.abs(np.trapz(analogdata['Force Y left filt resamp'][gait_events['Propulsion left start'][i]:gait_events['Propulsion left stop'][i]])) *1/fs)/relative
         
     gaitcharacteristics['Propulsion right'] = np.zeros(shape=(len(gait_events['Propulsion right start']),3)) *np.nan
     for i in range(len(gait_events['Propulsion right start'])):
         gaitcharacteristics['Propulsion right'][i,0] = gait_events['Propulsion right start'][i]
         gaitcharacteristics['Propulsion right'][i,1] = gait_events['Propulsion right stop'][i]
         # Compute the area using the composite trapezoidal rule.
-        gaitcharacteristics['Propulsion right'][i,2] = np.abs(np.trapz(analogdata['Force Y right filt resamp'][gait_events['Propulsion right start'][i]:gait_events['Propulsion right stop'][i]]))
+        gaitcharacteristics['Propulsion right'][i,2] = (np.abs(np.trapz(analogdata['Force Y right filt resamp'][gait_events['Propulsion right start'][i]:gait_events['Propulsion right stop'][i]])) *1/fs)/relative
                 
     return gait_events, gaitcharacteristics, analogdata
+
