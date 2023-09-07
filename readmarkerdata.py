@@ -1,80 +1,63 @@
-# -*- coding: utf-8 -*-
-"""
-Script to read c3d markerdata
-
-Version:
-    2023-01-10: C.J. Ensink - check if analog data available
-    2022-01-20: C.J. Ensink - add analog data
-    2022-12-23: Bart Nienhuis
 """
 
+Function to read marker data and analog data from .c3d files
+
+INPUT
+readmarkerdata (filepath)
+    filepath:       Filepath to location of the .c3d file
+
+OUTPUT
+    markerdata:     Dictionary with marker data, dict keys are the marker labels
+    fs_markerdata:  Sample frequency of the marker data; defaults to 100 Hz
+    analogdata:     Dictionary with analog data (force plates), dict keys are the analog labels; defaults to False (not available)
+    fs_analogdata:  Sample frequency of the analog data (force plates); defaults to False (not available)
+    
+Copyright (c):
+    2023, Carmen Ensink, Sint Maartenskliniek,
+    c.ensink@maartenskliniek.nl
+    
+    
+"""
+
+# Import dependencies
 import c3d
 import numpy as np
-# import tkinter as tk
-# from tkinter import filedialog
 
-# # diverse modules om te kunnen plotten  
-# import matplotlib.pyplot as plt
-# from matplotlib.textpath import TextPath
-# from matplotlib.patches import Rectangle, PathPatch
-# import mpl_toolkits.mplot3d.art3d as art3d
-# from matplotlib.transforms import Affine2D
 
 def readmarkerdata (filepath, **kwargs):
     
-    # definieeer een reader opject welke velden er zijn kun je terug vinden en de c3d.py file
+    # Set defaults
+    fs_markerdata = 100 # Sample frequency in Hz
+    fs_analogdata = False # Sample frequency in Hz, defaults to False (not available)
+    markerlabels = list() # List of marker labels
+    analog_available = False # Set availability of analog data channels (force plates) to False (not available)
+    analoglabels = list() # List of analog labels
+    markerdata_list = list() # List to store markerdata
+    analog_data_list = list() # List to store analog data (force plates)
+    markerdata = dict() # Output dictionary for marker data
+    analogdata = dict() # Output dictionary for analog data (force plates)
+    
+    # Define reader object with fields stored in the c3d.py file
     reader = c3d.Reader(open(filepath, 'rb'))
 
-    #  Lees sample frequentie markerdata
+    #  Define sample frequency of the optical marker data
     fs_markerdata = reader.point_rate
     
-    # De marker labels zitten in een apparte groep in de c3D file deze kun uitlezen m.b.v. het point_labels veld 
-    # De volgorde van de labels is dezelfde als de volgorde in de markerdata.
+    # Read marker label names from the point_labels field, the order of the labels is in line with the marker position data
     markerlabels=reader.point_labels
     
-    # Controleer of analoge data (forceplates) beschikbaar is
+    # Check if analog data (force plates) is available
     analog_available = reader.analog_used>0
     
-    analog_wanted = False
-    for key, value in kwargs.items():
-        if key == 'analogdata' and value == True:
-            analog_wanted = True
-        elif key == 'analogdata' and value == False:
-            analog_wanted = False
+    # Read analog label names and sample frequency
+    if analog_available == True:
+        analog_per_frame=reader.header.analog_per_frame
+        fs_analogdata = reader.analog_rate
+        analoglabels = list(reader.analog_labels)
+    elif analog_available == False:
+        analoglabels = 'None available'
     
-    # Lees analoge data in
-    analoglabels=[]
-    if analog_wanted == True:
-        if analog_available == True:
-            analog_per_frame=reader.header.analog_per_frame
-            # fs_analogdata = reader.analog_rate
-            # print(fs_analogdata)
-            analoglabels = list(reader.analog_labels)
-        elif analog_available == False:
-            analoglabels = 'None available'
-    
-    # dotloc = np.array([],dtype=int)
-    # for char in range(0,len(analog_labels)):
-    #     if analog_labels[char] == '.':
-    #         dotloc = np.append(dotloc, char)
-    
-    # for i in range(0,len(dotloc)):
-    #     lastuppercase_beforedot = [idx for idx in range(0,dotloc[i]) if analog_labels[idx].isupper()][-1]
-    #     firstspace_afterdot = [idx for idx in range(dotloc[i],len(analog_labels)) if analog_labels[idx] == " "][0]
-        
-    #     if dotloc[i] < dotloc[-1]:
-    #         if firstspace_afterdot > dotloc[i+1]:
-    #             firstspace_afterdot = [idx for idx in range(dotloc[i],len(analog_labels)) if analog_labels[idx].isupper()][1]
-                
-    #     label = analog_labels [lastuppercase_beforedot : firstspace_afterdot]
-    #     analoglabels.append(label)
-
-    # Dit zijn de lists waarin de makerdata en analog_data  worden ingelezen
-    markerdata_list=[]
-    analog_data_list=[]
-    analog_per_frame = reader.header.analog_per_frame
-    # analog_count = reader.header.analog_count
-
+    # Read the actual data
     for i, points, analog in reader.read_frames():
     #            frames : sequence of (frame number, points, analog)
     #            This method generates a sequence of (frame number, points, analog)
@@ -91,83 +74,34 @@ def readmarkerdata (filepath, **kwargs):
     #            column is the number of cameras that observed the point in question.
     #            Both the fourth and fifth values are -1 if the point is considered
     #            to be invalid.
-          
-        points2=points[:,0:3] # lees alleen de x,y,z, cordinaat 
-        markerdata_list.append(points2.T)
+        markerdata_list.append((points[:,0:3]).T)# Read only the x, y, z coordinate and append to the markerdata list
 
-        #  LET OP voor de analoge moet de matrix gereshaped worden en dat hangt af van het aantal analoge kanalen in de C3D file
-        try:
+        if analog_available == True:
             analog_data_list.append(analog.T)
-        # analog_data_list.append(analog.reshape(analog_per_frame, int(reader.analog_used))) #int(analog_count/analog_per_frame)))
-        # analog_data_list.append(analog.reshape(analog_per_frame,36))
-        # analog_data_list.append(analog.reshape(analog_per_frame,42))
-        except ZeroDivisionError:
-            # print('No analog data available')
+        elif analog_available == False:
             continue
-        except:
-            # print('Failed to read analog data')
-            continue
-        
-        
-    # maak van de twee list numpy array
+                
+    # Convert the markerdata_list and analog_data_list to numpy arrays
     marker_data=np.stack(markerdata_list, axis=2)
-    try:
-        analog_data=np.vstack(analog_data_list)   
-    except ValueError: # Empty analog_data_list
-        analog_data=np.array([]) 
-    
-    markerdata = dict()
-    # Sla merkerdata op onder label naam
+    if analog_available == True:
+        analog_data = np.vstack(analog_data_list)
+    elif analog_available == False:
+        analog_data = np.array([])
+        
+    # Store markerdata as dictionary with markerlabels as keys
     for i in range(0, len(markerlabels)):
             marker_x = marker_data[0,i,:]
             marker_y = marker_data[1,i,:]
             marker_z = marker_data[2,i,:]
             markerdata[markerlabels[i].split(' ')[0]] = np.transpose(np.array([marker_x, marker_y,marker_z]))
     
-    analogdata=dict()
+    # Store analogdata as dictionary with analoglabels as keys
     for i in range(0,len(analoglabels)):
         analogdata[analoglabels[i]] = analog_data[:,i]
     
+    # Check if start and stop frames were adjusted in data labelling software
     actual_start_frame = reader.first_frame
     actual_stop_frame = reader.last_frame
     
-    return markerdata, fs_markerdata, analogdata
+    return markerdata, fs_markerdata, analogdata, fs_analogdata
         
-    # fig1 = plt.figure()
-    # ax3 = fig1.add_subplot(111, projection='3d') 
-    # #
-    # marker1_x = marker_data[0,0,:]
-    # marker1_y = marker_data[1,0,:]
-    # marker1_z = marker_data[2,0,:]
-
-    # marker2_x = marker_data[0,1,:]
-    # marker2_y = marker_data[1,1,:]
-    # marker2_z = marker_data[2,1,:]
-    
-    # marker3_x = marker_data[0,2,:]
-    # marker3_y = marker_data[1,2,:]
-    # marker3_z = marker_data[2,2,:]
-        
-    # # plot de drie markers in een 3D plot
-    # ax3.scatter(marker1_x,marker1_y,marker1_z, c='r', marker='o')   
-    # ax3.scatter(marker2_x,marker2_y,marker2_z, c='g', marker='o')      
-    # ax3.scatter(marker3_x,marker3_y,marker3_z, c='m', marker='o')      
-
-
-    # ## Position graph x, y z
-    # plt.style.use('classic')
-    # plt.rcParams['font.size'] =8.0
-    # example_3D_plot, axarr=plt.subplots(3, sharex=True)
-    # example_3D_plot.subplots_adjust(hspace=0.4)
-    
-    # l1,=axarr[0].plot(marker1_x)
-    # axarr[0].set_title('X')
-    # axarr[0].set_ylabel('mm')
-    # l2,=axarr[1].plot(marker1_y)
-    # axarr[1].set_title('Y')
-    # axarr[1].set_ylabel('mm')
-    # l3,=axarr[2].plot(marker1_z)
-    # axarr[2].set_title('Z')
-    # axarr[2].set_ylabel('mm')
-    
-    # plt.show()
