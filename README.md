@@ -8,7 +8,7 @@ Gait analysis based on optical motion capture, including the option for forcepla
 
 **Required scripts:**
 - *readmarkerdata.py*: imports markerdata from  c3d file and if present also forceplate data
-- *eventdetection.py*: calculates gait events (initial contact, terminal contact)
+- *gaiteventdetection.py*: calculates gait events (initial contact, terminal contact)
 - *gaitcharacteristics.py*: calculates gait characteristics (gait speed, gait cycle duration, stance time, swing time, stride length, AP-propulsion)
 
 
