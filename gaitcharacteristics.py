@@ -43,8 +43,8 @@ propulsion(**kwargs)
     fs_markerdata:     integer; defaults to 100 Hz
     
 OUTPUT
-    gaitevents:        dictionary; added index numbers of start and stop of each propulsion phase
-    spatiotemporals:   dictionary; added generated forward propulsion for each propulsion phase
+    gaitevents:        dictionary; added index numbers of start and stop of each propulsion and braking phase
+    spatiotemporals:   dictionary; added generated forward propulsion for each propulsion and braking phase
     analogdata:        dictionary; added filtered and resampled analog data (2nd order, lowpass Butterworth filter, resampled to 100 Hz)
 
 Copyright (c):
@@ -590,6 +590,11 @@ def propulsion(gaitevents, spatiotemporals, analogdata, **kwargs):
     spatiotemporals['Stance left index numbers'] = np.array([], dtype=int)
     gaitevents['Propulsion left start'] = np.array([], dtype=int)
     gaitevents['Propulsion left stop'] = np.array([], dtype=int)
+    gaitevents['Peak propulsion left'] = np.array([], dtype=int)
+    gaitevents['Braking left start'] = np.array([], dtype=int)
+    gaitevents['Braking left stop'] = np.array([], dtype=int)
+    gaitevents['Peak braking left'] = np.array([], dtype=int)
+    
     for i in range(0, len(gaitevents['Index numbers initial contact left'])):
         try:
             start = gaitevents['Index numbers initial contact left'][i] # start of stance phase
@@ -598,8 +603,11 @@ def propulsion(gaitevents, spatiotemporals, analogdata, **kwargs):
             if np.min(analogdata['Force Z left filtered'][start:stop]) < th_crosssteps and np.any(analogdata['Force Z right filtered'][start:stop] > -1) and analogdata['Force Z left filtered'][start-10] > -10 and analogdata['Force Z left filtered'][stop+10] > -10: # If not cross step: continue
                 # Stance phase with correction for cross steps
                 spatiotemporals['Stance left index numbers'] = np.append(spatiotemporals['Stance left index numbers'], np.arange(start, stop, step=1)) # save the index numbers of the stance phase
-                # Find local minimum in Y force (= maximum forward force)
+                # Find local minimum in Y force (= maximum forward force) and local maximum in Y force (= maximum braking force)
                 localmin = np.argmin(analogdata['Force Y left filtered'][start:stop]) + start
+                localmax = np.argmax(analogdata['Force Y left filtered'][start:stop]) + start
+                gaitevents['Peak propulsion left'] = np.append(gaitevents['Peak propulsion left'], localmin)
+                gaitevents['Peak braking left'] = np.append(gaitevents['Peak braking left'], localmax)
                 # Find zero crossings around this local minimum
                 start_prop = np.argwhere(analogdata['Force Y left filtered'][start-5:localmin] > th_crossings)
                 stop_prop = np.argwhere(analogdata['Force Y left filtered'][localmin:stop+5] > th_crossings)
@@ -613,7 +621,21 @@ def propulsion(gaitevents, spatiotemporals, analogdata, **kwargs):
                         gaitevents['Propulsion left stop'] = np.append(gaitevents['Propulsion left stop'], stop)
                     elif stop_prop[0]+localmin < stop:
                         gaitevents['Propulsion left stop'] = np.append(gaitevents['Propulsion left stop'], (stop_prop[0] + localmin))
-                    
+                
+                start_brake = np.argwhere(analogdata['Force Y left filtered'][start-5:localmax] < th_crossings)
+                stop_brake = np.argwhere(analogdata['Force Y left filtered'][localmax:stop+5] < th_crossings)  
+                  
+                if len(start_brake) > 0 and len(stop_brake) > 0:
+                      if start_brake[-1]+start-5 >= start:
+                          gaitevents['Braking left start'] = np.append(gaitevents['Braking left start'], (start_brake[-1] + start-5))
+                      elif start_brake[-1]+start-5 < start:
+                          gaitevents['Braking left start'] = np.append(gaitevents['Braking left start'], start)
+                  
+                      if stop_brake[0]+localmax >= stop:
+                          gaitevents['Braking left stop'] = np.append(gaitevents['Braking left stop'], stop)
+                      elif stop_brake[0]+localmax < stop:
+                          gaitevents['Braking left stop'] = np.append(gaitevents['Braking left stop'], (stop_brake[0] + localmax))   
+      
         except IndexError:
             pass
     
@@ -621,6 +643,11 @@ def propulsion(gaitevents, spatiotemporals, analogdata, **kwargs):
     spatiotemporals['Stance right index numbers'] = np.array([], dtype=int)
     gaitevents['Propulsion right start'] = np.array([], dtype=int)
     gaitevents['Propulsion right stop'] = np.array([], dtype=int)
+    gaitevents['Peak propulsion right'] = np.array([], dtype=int)
+    gaitevents['Braking right start'] = np.array([], dtype=int)
+    gaitevents['Braking right stop'] = np.array([], dtype=int)
+    gaitevents['Peak braking right'] = np.array([], dtype=int)
+    
     for i in range(0, len(gaitevents['Index numbers initial contact right'])):
         try:
             start = gaitevents['Index numbers initial contact right'][i] # start of stance phase
@@ -629,8 +656,11 @@ def propulsion(gaitevents, spatiotemporals, analogdata, **kwargs):
             if np.min(analogdata['Force Z right filtered'][start:stop]) < th_crosssteps and np.any(analogdata['Force Z left filtered'][start:stop] > -1) and analogdata['Force Z right filtered'][start-10] > -10 and analogdata['Force Z right filtered'][stop+10] > -10: # If not cross step: continue
                 # Stance phase with correction for cross steps
                 spatiotemporals['Stance right index numbers'] = np.append(spatiotemporals['Stance right index numbers'], np.arange(start, stop, step=1)) # save the index numbers of the stance phase
-                # Find local minimum in Y force (= maximum forward force)
+                # Find local minimum in Y force (= maximum forward force) and local maximum in Y force (= maximum braking force)
                 localmin = np.argmin(analogdata['Force Y right filtered'][start:stop]) + start
+                localmax = np.argmax(analogdata['Force Y right filtered'][start:stop]) + start
+                gaitevents['Peak propulsion right'] = np.append(gaitevents['Peak propulsion right'], localmin)
+                gaitevents['Peak braking right'] = np.append(gaitevents['Peak braking right'], localmax)
                 # Find zero crossings around this local minimum
                 start_prop = np.argwhere(analogdata['Force Y right filtered'][start-5:localmin] > th_crossings)
                 stop_prop = np.argwhere(analogdata['Force Y right filtered'][localmin:stop+5] > th_crossings)
@@ -644,6 +674,20 @@ def propulsion(gaitevents, spatiotemporals, analogdata, **kwargs):
                         gaitevents['Propulsion right stop'] = np.append(gaitevents['Propulsion right stop'], stop)
                     elif stop_prop[0]+localmin < stop:
                         gaitevents['Propulsion right stop'] = np.append(gaitevents['Propulsion right stop'], (stop_prop[0] + localmin))
+                
+                start_brake = np.argwhere(analogdata['Force Y right filtered'][start-5:localmax] < th_crossings)
+                stop_brake = np.argwhere(analogdata['Force Y right filtered'][localmax:stop+5] < th_crossings)  
+                
+                if len(start_brake) > 0 and len(stop_brake) > 0:
+                    if start_brake[-1]+start-5 >= start:
+                        gaitevents['Braking right start'] = np.append(gaitevents['Braking right start'], (start_brake[-1] + start-5))
+                    elif start_brake[-1]+start-5 < start:
+                        gaitevents['Braking right start'] = np.append(gaitevents['Braking right start'], start)
+                
+                    if stop_brake[0]+localmax >= stop:
+                        gaitevents['Braking right stop'] = np.append(gaitevents['Braking right stop'], stop)
+                    elif stop_brake[0]+localmax < stop:
+                        gaitevents['Braking right stop'] = np.append(gaitevents['Braking right stop'], (stop_brake[0] + localmax))
                     
         except IndexError:
             pass
@@ -651,9 +695,29 @@ def propulsion(gaitevents, spatiotemporals, analogdata, **kwargs):
     
     # Remove propulsion start/stop events in first 10 seconds of trial
     gaitevents['Propulsion left start'] = gaitevents['Propulsion left start'][gaitevents['Propulsion left start'] > 10*fs_markerdata]
-    gaitevents['Propulsion left stop'] = gaitevents['Propulsion left stop'][gaitevents['Propulsion left stop'] > gaitevents['Propulsion left start'][0]]
+    try:
+        gaitevents['Propulsion left stop'] = gaitevents['Propulsion left stop'][gaitevents['Propulsion left stop'] > gaitevents['Propulsion left start'][0]]
+    except IndexError:
+        gaitevents['Propulsion left stop'] = np.array([])
+    gaitevents['Peak propulsion left'] = gaitevents['Peak propulsion left'][gaitevents['Peak propulsion left'] > 10*fs_markerdata]
+    gaitevents['Braking left start'] = gaitevents['Braking left start'][gaitevents['Braking left start'] > 10*fs_markerdata]
+    try:
+        gaitevents['Braking left stop'] = gaitevents['Braking left stop'][gaitevents['Braking left stop'] > gaitevents['Braking left start'][0]]
+    except IndexError:
+        gaitevents['Braking left stop'] = np.array([])
+    gaitevents['Peak braking left'] = gaitevents['Peak braking left'][gaitevents['Peak braking left'] > 10*fs_markerdata]
     gaitevents['Propulsion right start'] = gaitevents['Propulsion right start'][gaitevents['Propulsion right start'] > 10*fs_markerdata]
-    gaitevents['Propulsion right stop'] = gaitevents['Propulsion right stop'][gaitevents['Propulsion right stop'] > gaitevents['Propulsion right start'][0]]
+    try:
+        gaitevents['Propulsion right stop'] = gaitevents['Propulsion right stop'][gaitevents['Propulsion right stop'] > gaitevents['Propulsion right start'][0]]
+    except IndexError:
+        gaitevents['Propulsion right stop'] = np.array([])
+    gaitevents['Peak propulsion right'] = gaitevents['Peak propulsion right'][gaitevents['Peak propulsion right'] > 10*fs_markerdata]
+    gaitevents['Braking right start'] = gaitevents['Braking right start'][gaitevents['Braking right start'] > 10*fs_markerdata]
+    try:
+        gaitevents['Braking right stop'] = gaitevents['Braking right stop'][gaitevents['Braking right stop'] > gaitevents['Braking right start'][0]]
+    except IndexError:
+        gaitevents['Braking right stop'] = np.array([])
+    gaitevents['Peak braking right'] = gaitevents['Peak braking right'][gaitevents['Peak braking right'] > 10*fs_markerdata]
     
     # Debug plot
     if debugplot == True:
@@ -664,30 +728,40 @@ def propulsion(gaitevents, spatiotemporals, analogdata, **kwargs):
         axs[0].plot(analogdata['Force Z left filtered']/bodyweight, 'orange', label='Force Z left')
         axs[0].plot(gaitevents['Index numbers initial contact left'], analogdata['Force Y left filtered'][gaitevents['Index numbers initial contact left']]/bodyweight, 'r.')
         axs[0].plot(gaitevents['Index numbers terminal contact left'], analogdata['Force Y left filtered'][gaitevents['Index numbers terminal contact left']]/bodyweight, 'g.')
-        axs[0].plot(gaitevents['Propulsion left start'], analogdata['Force Y left filtered'][gaitevents['Propulsion left start']]/bodyweight, 'g^', label='Propulsion start')
-        axs[0].plot(gaitevents['Propulsion left stop'], analogdata['Force Y left filtered'][gaitevents['Propulsion left stop']]/bodyweight, 'r^', label='Propulsion stop')
+        # axs[0].plot(gaitevents['Propulsion left start'], analogdata['Force Y left filtered'][gaitevents['Propulsion left start']]/bodyweight, 'g^', label='Propulsion start')
+        # axs[0].plot(gaitevents['Propulsion left stop'], analogdata['Force Y left filtered'][gaitevents['Propulsion left stop']]/bodyweight, 'r^', label='Propulsion stop')
+        axs[0].plot(gaitevents['Peak propulsion left'], analogdata['Force Y left filtered'][gaitevents['Peak propulsion left']]/bodyweight, 'gx', label='Propulsion peak')
+        axs[0].plot(gaitevents['Peak braking left'], analogdata['Force Y left filtered'][gaitevents['Peak braking left']]/bodyweight, 'rx', label='Braking peak')
         
         for i in range(0, len(gaitevents['Propulsion left start'])):
-            axs[0].fill_between(x=np.arange(gaitevents['Propulsion left start'][i], gaitevents['Propulsion left stop'][i]), y1=analogdata['Force Y left filtered'][gaitevents['Propulsion left start'][i] : gaitevents['Propulsion left stop'][i]]/bodyweight, y2=0, color='cyan')
+            axs[0].fill_between(x=np.arange(gaitevents['Propulsion left start'][i], gaitevents['Propulsion left stop'][i]), y1=analogdata['Force Y left filtered'][gaitevents['Propulsion left start'][i] : gaitevents['Propulsion left stop'][i]]/bodyweight, y2=0, color='lightgreen')
+        for i in range(0, len(gaitevents['Braking left start'])):
+            axs[0].fill_between(x=np.arange(gaitevents['Braking left start'][i], gaitevents['Braking left stop'][i]), y1=analogdata['Force Y left filtered'][gaitevents['Braking left start'][i] : gaitevents['Braking left stop'][i]]/bodyweight, y2=0, color='pink')
+                
         #Right
         axs[1].plot(analogdata['Force Y right filtered']/bodyweight, 'blue', label='Force Y')
         axs[1].plot(analogdata['Force Z right filtered']/bodyweight, 'orange', label='Force Z')
         axs[1].plot(gaitevents['Index numbers initial contact right'], analogdata['Force Y right filtered'][gaitevents['Index numbers initial contact right']]/bodyweight, 'r.', label = 'IC')
         axs[1].plot(gaitevents['Index numbers terminal contact right'], analogdata['Force Y right filtered'][gaitevents['Index numbers terminal contact right']]/bodyweight, 'g.', label = 'TC')
-        axs[1].plot(gaitevents['Propulsion right start'], analogdata['Force Y right filtered'][gaitevents['Propulsion right start']]/bodyweight, 'gv', label='Propulsion start')
-        axs[1].plot(gaitevents['Propulsion right stop'], analogdata['Force Y right filtered'][gaitevents['Propulsion right stop']]/bodyweight, 'rv', label='Propulsion stop')
-
+        # axs[1].plot(gaitevents['Propulsion right start'], analogdata['Force Y right filtered'][gaitevents['Propulsion right start']]/bodyweight, 'gv', label='Propulsion start')
+        # axs[1].plot(gaitevents['Propulsion right stop'], analogdata['Force Y right filtered'][gaitevents['Propulsion right stop']]/bodyweight, 'rv', label='Propulsion stop')
+        axs[1].plot(gaitevents['Peak propulsion right'], analogdata['Force Y right filtered'][gaitevents['Peak propulsion right']]/bodyweight, 'gx', label='Propulsion peak')
+        axs[1].plot(gaitevents['Peak braking right'], analogdata['Force Y right filtered'][gaitevents['Peak braking right']]/bodyweight, 'rx', label='Braking peak')
+        
         for i in range(0, len(gaitevents['Propulsion right start'])):
-            axs[1].fill_between(x=np.arange(gaitevents['Propulsion right start'][i], gaitevents['Propulsion right stop'][i]), y1=analogdata['Force Y right filtered'][gaitevents['Propulsion right start'][i] : gaitevents['Propulsion right stop'][i]]/bodyweight, y2=0, color='cyan')
+            axs[1].fill_between(x=np.arange(gaitevents['Propulsion right start'][i], gaitevents['Propulsion right stop'][i]), y1=analogdata['Force Y right filtered'][gaitevents['Propulsion right start'][i] : gaitevents['Propulsion right stop'][i]]/bodyweight, y2=0, color='lightgreen')
+        
+        for i in range(0, len(gaitevents['Braking right start'])):
+            axs[1].fill_between(x=np.arange(gaitevents['Braking right start'][i], gaitevents['Braking right stop'][i]), y1=analogdata['Force Y right filtered'][gaitevents['Braking right start'][i] : gaitevents['Braking right stop'][i]]/bodyweight, y2=0, color='pink')
         axs[1].legend()
-
 
     # Calculate area under the curve of force in anterior-posterior direction
     # relative = 1
     # for key, value in kwargs.items():
     #     if key == 'relative_to_bodyweight':
     #         relative = value
-        
+    
+    # Left side
     # Propultion = area under the curve
     spatiotemporals['Propulsion left'] = np.zeros(shape=(len(gaitevents['Propulsion left start']),3)) *np.nan
     for i in range(len(gaitevents['Propulsion left start'])):
@@ -695,15 +769,49 @@ def propulsion(gaitevents, spatiotemporals, analogdata, **kwargs):
         spatiotemporals['Propulsion left'][i,1] = gaitevents['Propulsion left stop'][i]
         # Compute the area using the composite trapezoidal rule.
         spatiotemporals['Propulsion left'][i,2] = (np.abs(np.trapz(analogdata['Force Y left filtered'][gaitevents['Propulsion left start'][i]:gaitevents['Propulsion left stop'][i]])) *1/fs_markerdata)/bodyweight
-        
+    # Peak propulsion
+    spatiotemporals['Peak propulsion left'] = np.zeros(shape=(len(gaitevents['Peak propulsion left']),2)) *np.nan
+    for i in range(len(gaitevents['Peak propulsion left'])):
+        spatiotemporals['Peak propulsion left'][i,0] = gaitevents['Peak propulsion left'][i]
+        spatiotemporals['Peak propulsion left'][i,1] = (analogdata['Force Y left filtered'][gaitevents['Peak propulsion left'][i]])/bodyweight
+    # Braking = area under the curve
+    spatiotemporals['Braking left'] = np.zeros(shape=(len(gaitevents['Braking left start']),3)) *np.nan
+    for i in range(len(gaitevents['Braking left start'])):
+        spatiotemporals['Braking left'][i,0] = gaitevents['Braking left start'][i]
+        spatiotemporals['Braking left'][i,1] = gaitevents['Braking left stop'][i]
+        # Compute the area using the composite trapezoidal rule.
+        spatiotemporals['Braking left'][i,2] = (np.abs(np.trapz(analogdata['Force Y left filtered'][gaitevents['Braking left start'][i]:gaitevents['Braking left stop'][i]])) *1/fs_markerdata)/bodyweight
+    # Peak braking
+    spatiotemporals['Peak braking left'] = np.zeros(shape=(len(gaitevents['Peak braking left']),2)) *np.nan
+    for i in range(len(gaitevents['Peak braking left'])):
+        spatiotemporals['Peak braking left'][i,0] = gaitevents['Peak braking left'][i]
+        spatiotemporals['Peak braking left'][i,1] = (analogdata['Force Y left filtered'][gaitevents['Peak braking left'][i]])/bodyweight
+    
+    # Right side
+    # Propultion = area under the curve
     spatiotemporals['Propulsion right'] = np.zeros(shape=(len(gaitevents['Propulsion right start']),3)) *np.nan
     for i in range(len(gaitevents['Propulsion right start'])):
         spatiotemporals['Propulsion right'][i,0] = gaitevents['Propulsion right start'][i]
         spatiotemporals['Propulsion right'][i,1] = gaitevents['Propulsion right stop'][i]
         # Compute the area using the composite trapezoidal rule.
         spatiotemporals['Propulsion right'][i,2] = (np.abs(np.trapz(analogdata['Force Y right filtered'][gaitevents['Propulsion right start'][i]:gaitevents['Propulsion right stop'][i]])) *1/fs_markerdata)/bodyweight
-                
-    
+    # Peak propulsion
+    spatiotemporals['Peak propulsion right'] = np.zeros(shape=(len(gaitevents['Peak propulsion right']),2)) *np.nan
+    for i in range(len(gaitevents['Peak propulsion right'])):
+        spatiotemporals['Peak propulsion right'][i,0] = gaitevents['Peak propulsion right'][i]
+        spatiotemporals['Peak propulsion right'][i,1] = (analogdata['Force Y right filtered'][gaitevents['Peak propulsion right'][i]])/bodyweight
+    # Braking = area under the curve
+    spatiotemporals['Braking right'] = np.zeros(shape=(len(gaitevents['Braking right start']),3)) *np.nan
+    for i in range(len(gaitevents['Braking right start'])):
+        spatiotemporals['Braking right'][i,0] = gaitevents['Braking right start'][i]
+        spatiotemporals['Braking right'][i,1] = gaitevents['Braking right stop'][i]
+        # Compute the area using the composite trapezoidal rule.
+        spatiotemporals['Braking right'][i,2] = (np.abs(np.trapz(analogdata['Force Y right filtered'][gaitevents['Braking right start'][i]:gaitevents['Braking right stop'][i]])) *1/fs_markerdata)/bodyweight
+    # Peak braking
+    spatiotemporals['Peak braking right'] = np.zeros(shape=(len(gaitevents['Peak braking right']),2)) *np.nan
+    for i in range(len(gaitevents['Peak braking right'])):
+        spatiotemporals['Peak braking right'][i,0] = gaitevents['Peak braking right'][i]
+        spatiotemporals['Peak braking right'][i,1] = (analogdata['Force Y right filtered'][gaitevents['Peak braking right'][i]])/bodyweight
     
     
     return gaitevents, spatiotemporals, analogdata
