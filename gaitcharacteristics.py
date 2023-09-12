@@ -43,8 +43,8 @@ propulsion(**kwargs)
     fs_markerdata:     integer; defaults to 100 Hz
     
 OUTPUT
-    gaitevents:        dictionary; added index numbers of start and stop of each propulsion and braking phase
-    spatiotemporals:   dictionary; added generated forward propulsion for each propulsion and braking phase
+    gaitevents:        dictionary; added index numbers of start and stop of each propulsion and braking impulse, and index numbers of peak propulsion and braking instances
+    spatiotemporals:   dictionary; added generated forward propulsion for each propulsion and braking impulse, and peak propulsion and braking values
     analogdata:        dictionary; added filtered and resampled analog data (2nd order, lowpass Butterworth filter, resampled to 100 Hz)
 
 Copyright (c):
