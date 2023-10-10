@@ -843,33 +843,32 @@ def propulsion(gaitevents, spatiotemporals, analogdata, **kwargs):
     # Remove propulsion start/stop events in first 10 seconds of trial
     gaitevents['Propulsion left start'] = gaitevents['Propulsion left start'][gaitevents['Propulsion left start'] > 10*fs_markerdata]
     try:
-        gaitevents['Propulsion left stop'] = gaitevents['Propulsion left stop'][gaitevents['Propulsion left stop'] > gaitevents['Propulsion left start'][0]]
+        gaitevents['Propulsion left stop'] = gaitevents['Propulsion left stop'][gaitevents['Propulsion left stop'] >= gaitevents['Propulsion left start'][0]]
     except IndexError:
-        gaitevents['Propulsion left stop'] = np.array([])
+        gaitevents['Propulsion left stop'] = np.array([], dtype=int)
     try:
-        gaitevents['Propulsion left start'] = gaitevents['Propulsion left start'][gaitevents['Propulsion left start'] < gaitevents['Propulsion left stop'][-1]]
+        gaitevents['Propulsion left start'] = gaitevents['Propulsion left start'][gaitevents['Propulsion left start'] <= gaitevents['Propulsion left stop'][-1]]
     except IndexError:
-        gaitevents['Propulsion left start'] = np.array([])
+        gaitevents['Propulsion left start'] = np.array([], dtype=int)
     gaitevents['Braking left start'] = gaitevents['Braking left start'][gaitevents['Braking left start'] > 10*fs_markerdata]
     try:
-        gaitevents['Braking left stop'] = gaitevents['Braking left stop'][gaitevents['Braking left stop'] > gaitevents['Braking left start'][0]]
+        gaitevents['Braking left stop'] = gaitevents['Braking left stop'][gaitevents['Braking left stop'] >= gaitevents['Braking left start'][0]]
     except IndexError:
-        gaitevents['Braking left stop'] = np.array([])
+        gaitevents['Braking left stop'] = np.array([], dtype=int)
     gaitevents['Propulsion right start'] = gaitevents['Propulsion right start'][gaitevents['Propulsion right start'] > 10*fs_markerdata]
     try:
-        gaitevents['Propulsion right stop'] = gaitevents['Propulsion right stop'][gaitevents['Propulsion right stop'] > gaitevents['Propulsion right start'][0]]
+        gaitevents['Propulsion right stop'] = gaitevents['Propulsion right stop'][gaitevents['Propulsion right stop'] >= gaitevents['Propulsion right start'][0]]
     except IndexError:
-        gaitevents['Propulsion right stop'] = np.array([])
+        gaitevents['Propulsion right stop'] = np.array([], dtype=int)
     try:
-        gaitevents['Propulsion right start'] = gaitevents['Propulsion right start'][gaitevents['Propulsion right start'] < gaitevents['Propulsion right stop'][-1]]
+        gaitevents['Propulsion right start'] = gaitevents['Propulsion right start'][gaitevents['Propulsion right start'] <= gaitevents['Propulsion right stop'][-1]]
     except IndexError:
-        gaitevents['Propulsion right start'] = np.array([])
+        gaitevents['Propulsion right start'] = np.array([], dtype=int)
     gaitevents['Braking right start'] = gaitevents['Braking right start'][gaitevents['Braking right start'] > 10*fs_markerdata]
     try:
-        gaitevents['Braking right stop'] = gaitevents['Braking right stop'][gaitevents['Braking right stop'] > gaitevents['Braking right start'][0]]
+        gaitevents['Braking right stop'] = gaitevents['Braking right stop'][gaitevents['Braking right stop'] >= gaitevents['Braking right start'][0]]
     except IndexError:
-        gaitevents['Braking right stop'] = np.array([])
-    
+        gaitevents['Braking right stop'] = np.array([], dtype=int)
     
     # Peak breaking and propulsive forces
     gaitevents['Peak propulsion left'] = np.array([], dtype=int)
@@ -900,6 +899,7 @@ def propulsion(gaitevents, spatiotemporals, analogdata, **kwargs):
             gaitevents['Peak braking right'] = np.append(gaitevents['Peak braking right'], gaitevents['Braking right start'][i]+idxmax)
         except ValueError:
             pass
+    
     # Debug plot
     if debugplot == True:
         fig, axs = plt.subplots(nrows=2, ncols=1, sharex=True)
